@@ -7,7 +7,7 @@
 //
 
 #import "ViewController.h"
-
+#import "SXDataTableViewCell.h"
 @interface ViewController ()
 
 @end
@@ -19,7 +19,11 @@
     _bottomView=[[SXBottomView alloc] initWithFrame:CGRectMake(0, 0, 320, 50)];
     [self.view addSubview:_bottomView];
     
-
+    _sxDataTableView=[[SXDataTableView alloc] initWithFrame:CGRectMake(9, 150, 302, 200) andCellClass:[NSString stringWithFormat:@"%@",[SXDataTableViewCell class]]];
+    
+    _sxDataTableView.tableView.delegate=self;
+    
+    [self.view addSubview:_sxDataTableView];
     
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
@@ -46,5 +50,20 @@
         default:
             break;
     }
+}
+
+#pragma mark -
+#pragma mark UIScrollViewDelegate Methods
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView{
+	
+	[_sxDataTableView.refreshHeaderView egoRefreshScrollViewDidScroll:scrollView];
+    
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+	
+	[_sxDataTableView.refreshHeaderView egoRefreshScrollViewDidEndDragging:scrollView];
+	
 }
 @end

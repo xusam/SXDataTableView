@@ -9,10 +9,12 @@
 #import "SXDataTableView.h"
 #import "SXBottomView.h"
 #import "SXDataTableViewCell.h"
+#import "CJSONDeserializer.h"
 @implementation SXDataTableView
 @synthesize arrData = _arrData;//这里只有一个section,是一维的数据
 @synthesize tableView = _tableView;
 @synthesize canBeEdit = _canBeEdit;
+@synthesize refreshHeaderView=_refreshHeaderView;
 
 
 //=== 多页加载
@@ -69,14 +71,32 @@
         [_tableView reloadData];
         
         _bottomView = nil;
-        
-     
-        
+   
         [self setBackgroundColor:[UIColor clearColor]];
         [_tableView setBackgroundColor:[UIColor clearColor]];
         
         
+        //下拉刷新
+        if (_refreshHeaderView == nil) {
+            
+            EGORefreshTableHeaderView *headView = [[EGORefreshTableHeaderView alloc] initWithFrame:CGRectMake(0.0f, 0.0f - _tableView.bounds.size.height, frame.size.width, _tableView.bounds.size.height)];
+            headView.delegate = self;
+            [self.tableView addSubview:headView];
+            _refreshHeaderView = headView;
+            [headView release];
+            
+        }
+        
+        [_refreshHeaderView refreshLastUpdatedDate];
+        
+        
+        
         [self addSubview:_tableView];
+        
+        
+
+
+        
  
     }
     return self;
@@ -84,7 +104,7 @@
 }
 
 
-
+//*************************tableview操作方法 ***********************//
 
 //多页加载（默认不显示）//拖动事件，触发加载更多
 
@@ -183,9 +203,15 @@
     [_tableView reloadData];
 
 }
+//清除所有数据
+-(void)removeAllData{
+    
+    [_arrData removeAllObjects];
+    [_tableView reloadData];
+    
+}
 
-
-
+//*************************tableviewData delegate ***********************//
 #pragma mark - Table view data source
 
 
@@ -234,10 +260,12 @@
 }
 
 
+
 /*
 
  
  */
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     
@@ -279,25 +307,13 @@
             
             if (cell == nil)
             {
-                if ([Dataobject isKindOfClass: [NSDictionary class]])
-                {
-                    Class theClass = NSClassFromString(_CellClassName);
-                    NSObject* CellObject = [[[theClass performSelector:@selector(alloc)] initWithStyle:UITableViewCellStyleDefault
-                                                                                       reuseIdentifier:_CellClassName] autorelease];
-                    
-                    
-                    if ([CellObject isKindOfClass:[SXDataTableViewCell class]])
-                    {
-                        cell = (SXDataTableViewCell *)CellObject;
-                    }
-                }
+                cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
+                                               reuseIdentifier:_CellClassName] autorelease];
             }
             
-            if (   [Dataobject isKindOfClass: [NSDictionary class]]
-                && [cell isKindOfClass:[SXDataTableViewCell class]])
-            {
-                [(SXDataTableViewCell *)cell ShowCellWithData:(NSDictionary *)Dataobject];
-            }
+            
+            [(SXDataTableViewCell *)cell ShowCellWithData:(NSDictionary *)Dataobject];
+            
             
         }
         
@@ -318,6 +334,106 @@
 {
     
 }
+
+//*************************数据访问***********************//
+#pragma makr -  Http Request
+
+-(void)getRequestDataWithUrl:(NSString*)strUrl params:(NSDictionary*)data requestType:(Request_Type)requestType{
+
+    [_asimanager getDataWithUrl:strUrl params:data requestType:requestType];
+}
+
+-(void)postRequestDataWithUrl:(NSString*)strUrl params:(NSArray*)dataList requestType:(Request_Type)requestType{
+
+    [_asimanager postDataWithUrl:strUrl params:dataList requestType:requestType];
+}
+
+#pragma mark - ASIRequestHttp  Delegate
+
+-(void)requestFinish:(Request_Type)requestType data:(NSData *)data{
+
+    NSError * theError;
+    _isAlreadyRequetsed=YES;
+    id theObject = [[CJSONDeserializer deserializer] deserialize:data error:&theError];
+    
+    [self fillDataWithJsonData:theObject requestType:requestType];
+    
+
+}
+//让继承者重写些方法，
+-(void)fillDataWithJsonData:(id)jsonData requestType:(Request_Type)requestType{
+
+       
+
+}
+
+
+-(void)requestFail:(Request_Type)requestType{
+
+
+
+}
+
+//*************************下拉刷新***********************//
+#pragma mark -
+#pragma mark Data Source Loading / Reloading Methods
+
+- (void)reloadTableViewDataSource{
+	
+	//  should be calling your tableviews data source model to reload
+	//  put here just for demo
+	_reloading = YES;
+	
+}
+
+- (void)doneLoadingTableViewData{
+	
+	//  model should call this when its done loading
+	_reloading = NO;
+	[_refreshHeaderView egoRefreshScrollViewDataSourceDidFinishedLoading:self.tableView];
+	
+}
+/*
+//在使用Uitableview.delegate者的中调用，触发下拉刷新 
+#pragma mark -
+#pragma mark UIScrollViewDelegate Methods
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView{
+	
+	[_refreshHeaderView egoRefreshScrollViewDidScroll:scrollView];
+    
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+	
+	[_refreshHeaderView egoRefreshScrollViewDidEndDragging:scrollView];
+	
+}
+
+*/
+
+#pragma mark -
+#pragma mark EGORefreshTableHeaderDelegate Methods
+
+- (void)egoRefreshTableHeaderDidTriggerRefresh:(EGORefreshTableHeaderView*)view{
+	
+	[self reloadTableViewDataSource];
+	[self performSelector:@selector(doneLoadingTableViewData) withObject:nil afterDelay:3.0];
+	
+}
+
+- (BOOL)egoRefreshTableHeaderDataSourceIsLoading:(EGORefreshTableHeaderView*)view{
+	
+	return _reloading; // should return if data source model is reloading
+	
+}
+
+- (NSDate*)egoRefreshTableHeaderDataSourceLastUpdated:(EGORefreshTableHeaderView*)view{
+	
+	return [NSDate date]; // should return date data source was last changed
+	
+}
+
 
 
 @end

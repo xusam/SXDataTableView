@@ -8,13 +8,16 @@
 
 #import <UIKit/UIKit.h>
 #import "ASIManager.h"
+#import "EGORefreshTableHeaderView.h"
 @class SXBottomView;
 
-@interface SXDataTableView : UIView<UITableViewDataSource,ASIManagerDelegate>{
+@interface SXDataTableView : UIView<UITableViewDataSource,ASIManagerDelegate,EGORefreshTableHeaderDelegate>{
 
     ASIManager * _asimanager;
     int  _intCurrentRowEdit;
     NSString *_CellClassName;
+    
+	BOOL _reloading;
    
 }
 @property(nonatomic,readonly)NSMutableArray * arrData;//服务器获取的数据
@@ -25,7 +28,7 @@
 @property(nonatomic, assign)BOOL isAlreadyRequetsed; //为YES时，上页请求已完成，用于避免同一页多次请求
 @property(nonatomic, assign)NSInteger iPageCurrent;  //当前页码
 @property(nonatomic, retain)SXBottomView *bottomView;  //加载更多显示View
-
+@property(nonatomic,retain)EGORefreshTableHeaderView *refreshHeaderView;
 - (id)initWithFrame:(CGRect)frame andCellClass:(NSString *)className;//初始化
 //请求服务端
 
@@ -38,6 +41,7 @@
 
 -(void)requestFinishS2CCurrentPage:(int)PageNumber TotalPage:(int)PageCount;//判断页码是否最后一页,页码服务端
 
-
-
+//下拉刷新方法
+- (void)reloadTableViewDataSource;
+- (void)doneLoadingTableViewData;
 @end

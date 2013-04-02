@@ -8,10 +8,15 @@
 
 #import <UIKit/UIKit.h>
 #import "SXBottomView.h"
-@interface ViewController : UIViewController
+#import "SXDataTableView.h"
+@interface ViewController : UIViewController<UITableViewDelegate>
 {
 
     SXBottomView * _bottomView;
+    
+    SXDataTableView * _sxDataTableView;
+    
+    
 }
 
 
